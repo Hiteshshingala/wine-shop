@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Store Locator</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,700"
+      rel="stylesheet"
+    />
+    <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js"></script>
+    <link
+      href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.5.1/mapbox-gl-geocoder.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.5.1/mapbox-gl-geocoder.css"
+      type="text/css"
+    />
+    <style>
+      body {
+        color: #404040;
+        font: 400 15px/22px "Source Sans Pro", "Helvetica Neue", Sans-serif;
+        margin: 0;
+        padding: 0;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      * {
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        box-sizing: border-box;
+      }
+
+      .sidebar {
+        position: absolute;
+        width: 33.3333%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        overflow: hidden;
+        border-right: 1px solid rgba(0, 0, 0, 0.25);
+      }
+      .pad2 {
+        padding: 20px;
+      }
+
+      .map {
+        position: absolute;
+        left: 33.3333%;
+        width: 66.6666%;
+        top: 0;
+        bottom: 0;
+      }
+
+      h1 {
+        font-size: 22px;
+        margin: 0;
+        font-weight: 400;
+        line-height: 20px;
+        padding: 20px 2px;
+      }
+
+      a {
+        color: #404040;
+        text-decoration: none;
+      }
+
+      a:hover {
+        color: #101010;
+      }
+
+      .heading {
+        background: #fff;
+        border-bottom: 1px solid #eee;
+        min-height: 60px;
+        line-height: 60px;
+        padding: 0 10px;
+        background-color: #00853e;
+        color: #fff;
+      }
+
+      .listings {
+        height: 100%;
+        overflow: auto;
+        padding-bottom: 60px;
+      }
+
+      .listings .item {
+        display: block;
+        border-bottom: 1px solid #eee;
+        padding: 10px;
+        text-decoration: none;
+      }
+
+      .listings .item:last-child {
+        border-bottom: none;
+      }
+      .listings .item .title {
+        display: block;
+        color: #00853e;
+        font-weight: 700;
+      }
+
+      .listings .item .title small {
+        font-weight: 400;
+      }
+      .listings .item.active .title,
+      .listings .item .title:hover {
+        color: #8cc63f;
+      }
+      .listings .item.active {
+        background-color: #f8f8f8;
+      }
+      ::-webkit-scrollbar {
+        width: 3px;
+        height: 3px;
+        border-left: 0;
+        background: rgba(0, 0, 0, 0.1);
+      }
+      ::-webkit-scrollbar-track {
+        background: none;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #00853e;
+        border-radius: 0;
+      }
+
+      .marker {
+        border: none;
+        cursor: pointer;
+        height: 56px;
+        width: 56px;
+        background-image: url("./img/marker.png");
+        background-color: rgba(0, 0, 0, 0);
+      }
+
+      .clearfix {
+        display: block;
+      }
+      .clearfix:after {
+        content: ".";
+        display: block;
+        height: 0;
+        clear: both;
+        visibility: hidden;
+      }
+
+      /* Marker tweaks */
+      .mapboxgl-popup {
+        padding-bottom: 50px;
+      }
+
+      .mapboxgl-popup-close-button {
+        display: none;
+      }
+      .mapboxgl-popup-content {
+        font: 400 15px/22px "Source Sans Pro", "Helvetica Neue", Sans-serif;
+        padding: 0;
+        width: 180px;
+      }
+      .mapboxgl-popup-content-wrapper {
+        padding: 1%;
+      }
+      .mapboxgl-popup-content h3 {
+        background: #91c949;
+        color: #fff;
+        margin: 0;
+        display: block;
+        padding: 10px;
+        border-radius: 3px 3px 0 0;
+        font-weight: 700;
+        margin-top: -15px;
+      }
+
+      .mapboxgl-popup-content h4 {
+        margin: 0;
+        display: block;
+        padding: 10px 10px 10px 10px;
+        font-weight: 400;
+      }
+
+      .mapboxgl-popup-content div {
+        padding: 10px;
+      }
+
+      .mapboxgl-container .leaflet-marker-icon {
+        cursor: pointer;
+      }
+
+      .mapboxgl-popup-anchor-top > .mapboxgl-popup-content {
+        margin-top: 15px;
+      }
+
+      .mapboxgl-popup-anchor-top > .mapboxgl-popup-tip {
+        border-bottom-color: #91c949;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="heading">
+        <h1>Our locations</h1>
+      </div>
+      <div id="listings" class="listings"></div>
+    </div>
+    <div id="map" class="map"></div>
+    <script>
+      /* This will let you use the .remove() function later on */
+      if (!("remove" in Element.prototype)) {
+        Element.prototype.remove = function () {
+          if (this.parentNode) {
+            this.parentNode.removeChild(this);
+          }
+        };
+      }
+
+      mapboxgl.accessToken =
+        "pk.eyJ1IjoiYW5ndWxhcjE1ODMiLCJhIjoiY2toaGd4amNuMTFqejJybHVmN3c1NDBlcSJ9.S3KkGY169sMPpRRsGwE3qg";
+
+      /**
+       * Add the map to the page
+       */
+      var map = new mapboxgl.Map({
+        container: "map",
+        style: "mapbox://styles/mapbox/light-v10",
+        center: [-77.034084142948, 38.909671288923],
+        zoom: 13,
+        scrollZoom: false,
+      });
+
+      var stores = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [-118.874355, 34.183137],
+            },
+            properties: {
+              phoneFormatted: "(202) 234-7336",
+              phone: "2022347336",
+              address: "394 N. MOORPARK ROAD",
+              city: "Thousand Oaks, CA",
+              country: "United States",
+              postalCode: "91360",
+              state: "CA",
+              name: 'TOTAL WINE - THOUSAND OAKS'
+            },
+          },
+          {
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [-117.536281, 34.1045],
+            },
+            properties: {
+              phoneFormatted: "(202) 507-8357",
+              phone: "2025078357",
+              address: "8201 Day Creek Blvd",
+              city: "Rancho Cucamonga, CA",
+              country: "United States",
+              postalCode: "91739",
+              state: "CA",
+              name: 'TOTAL WINE - RANCHO CUCAMONGA'
+            },
+          },
+          {
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [-117.882211, 33.912111],
+            },
+            properties: {
+              phoneFormatted: "(202) 387-9338",
+              phone: "2023879338",
+              address: "471 South Associated Road",
+              city: "Brea, CA",
+              country: "United States",
+              crossStreet: "at Dupont Circle",
+              postalCode: "92821",
+              state: "D.C.",
+              name: 'TOTAL WINE - BREA'
+            },
+          },
+          {
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [-117.151095, 33.529823],
+            },
+            properties: {
+              phoneFormatted: "(202) 337-9338",
+              phone: "2023379338",
+              address: "40432 WINCHESTER ROAD",
+              city: "Temecula, CA",
+              country: "United States",
+              postalCode: "92591",
+              state: "CA",
+              name: 'TOTAL WINE - TEMECULA'
+            },
+          },
+          {
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [-118.135521, 34.146327],
+            },
+            properties: {
+              phoneFormatted: "(202) 547-9338",
+              phone: "2025479338",
+              address: "721 EAST COLORADO BLVD",
+              city: "Pasadena, CA",
+              country: "United States",
+              crossStreet: "btwn 2nd & 3rd Sts. SE",
+              postalCode: "91101",
+              state: "CA",
+              name: 'TOTAL WINE - PASADENA'
+            },
+          },
+          {
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [-118.353723, 33.867807],
+            },
+            properties: {
+              address: "1505 HAWTHORNE BLVD.",
+              city: "Redondo Beach, CA",
+              country: "United States",
+              postalCode: "90278",
+              state: "CA",
+              name: 'TOTAL WINE - REDONDO BEACH'
+            },
+          },
+          {
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [-117.988536, 33.72678],
+            },
+            properties: {
+              phoneFormatted: "(301) 654-7336",
+              phone: "3016547336",
+              address: "16272 BEACH BLVD.",
+              cc: "US",
+              city: "Huntington Beach, CA",
+              country: "United States",
+              postalCode: "92647",
+              state: "CA",
+              name: 'TOTAL WINE - HUNTINGTON'
+            },
+          },
+          {
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [-116.404522, 33.728161],
+            },
+            properties: {
+              phoneFormatted: "(571) 203-0082",
+              phone: "5712030082",
+              address: "72339 Highway 111",
+              city: "Palm Desert, CA",
+              country: "United States",
+              crossStreet: "btw Explorer & Library",
+              postalCode: "92260",
+              state: "CA",
+              name: 'TOTAL WINE - PALM DESERT'
+            },
+          },
+          {
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [-121.416704, 38.596885],
+            },
+            properties: {
+              phoneFormatted: "(703) 522-2016",
+              phone: "7035222016",
+              address: "2121 ARDEN WAY",
+              city: "SACRAMENTO, CA",
+              country: "United States",
+              postalCode: "95825",
+              state: "CA",
+              name: 'TOTAL WINE - SACRAMENTO'
+            },
+          },
+          {
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [-93.180345, 45.013597],
+            },
+            properties: {
+              phoneFormatted: "(610) 642-9400",
+              phone: "6106429400",
+              address: "5791 FIVE STAR BLVD",
+              city: "ROSEVILLE, CA",
+              country: "United States",
+              postalCode: "95678",
+              state: "CA",
+              name: 'TOTAL WINE - ROSEVILLE'
+            },
+          },
+          {
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [-121.126266, 38.652874],
+            },
+            properties: {
+              phoneFormatted: "(215) 386-1365",
+              phone: "2153861365",
+              address: "2765 E BIDWELL ST",
+              city: "FOLSOM, CA",
+              country: "United States",
+              postalCode: "95630",
+              state: "CA",
+              name: 'TOTAL WINE - FOLSOM'
+            },
+          },
+          {
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [-121.413002, 38.42529],
+            },
+            properties: {
+              phoneFormatted: "(202) 331-3355",
+              phone: "2023313355",
+              address: "7707 LAGUNA BLVD STE 140",
+              city: "ELK GROVE, CA",
+              country: "United States",
+              crossStreet: "at 19th St",
+              postalCode: "95758",
+              state: "CA",
+              name: 'TOTAL WINE - ELK GROVE'
+            },
+          },
+        ],
+      };
+
+      /**
+       * Assign a unique id to each store. You'll use this `id`
+       * later to associate each point on the map with a listing
+       * in the sidebar.
+       */
+      stores.features.forEach(function (store, i) {
+        store.properties.id = i;
+      });
+
+      /**
+       * Wait until the map loads to make changes to the map.
+       */
+      map.on("load", function (e) {
+        /**
+         * This is where your '.addLayer()' used to be, instead
+         * add only the source without styling a layer
+         */
+        map.addSource("places", {
+          type: "geojson",
+          data: stores,
+        });
+
+        /**
+         * Add all the things to the page:
+         * - The location listings on the side of the page
+         * - The markers onto the map
+         */
+        buildLocationList(stores);
+        addMarkers();
+      });
+
+      map.addControl(
+        new MapboxGeocoder({
+          accessToken: mapboxgl.accessToken,
+          mapboxgl: mapboxgl,
+        })
+      );
+
+      /**
+       * Add a marker to the map for every store listing.
+       **/
+      function addMarkers() {
+        /* For each feature in the GeoJSON object above: */
+        stores.features.forEach(function (marker) {
+          /* Create a div element for the marker. */
+          var el = document.createElement("div");
+          /* Assign a unique `id` to the marker. */
+          el.id = "marker-" + marker.properties.id;
+          /* Assign the `marker` class to each marker for styling. */
+          el.className = "marker";
+
+          /**
+           * Create a marker using the div element
+           * defined above and add it to the map.
+           **/
+          new mapboxgl.Marker(el, { offset: [0, -23] })
+            .setLngLat(marker.geometry.coordinates)
+            .addTo(map);
+
+          /**
+           * Listen to the element and when it is clicked, do three things:
+           * 1. Fly to the point
+           * 2. Close all other popups and display popup for clicked store
+           * 3. Highlight listing in sidebar (and remove highlight for all other listings)
+           **/
+          el.addEventListener("click", function (e) {
+            /* Fly to the point */
+            flyToStore(marker);
+            /* Close all other popups and display popup for clicked store */
+            createPopUp(marker);
+            /* Highlight listing in sidebar */
+            var activeItem = document.getElementsByClassName("active");
+            e.stopPropagation();
+            if (activeItem[0]) {
+              activeItem[0].classList.remove("active");
+            }
+            var listing = document.getElementById(
+              "listing-" + marker.properties.id
+            );
+            listing.classList.add("active");
+          });
+        });
+      }
+
+      /**
+       * Add a listing for each store to the sidebar.
+       **/
+      function buildLocationList(data) {
+        data.features.forEach(function (store, i) {
+          /**
+           * Create a shortcut for `store.properties`,
+           * which will be used several times below.
+           **/
+          var prop = store.properties;
+
+          /* Add a new listing section to the sidebar. */
+          var listings = document.getElementById("listings");
+          var listing = listings.appendChild(document.createElement("div"));
+          /* Assign a unique `id` to the listing. */
+          listing.id = "listing-" + prop.id;
+          /* Assign the `item` class to each listing for styling. */
+          listing.className = "item";
+
+          /* Add the link to the individual listing created above. */
+          var link = listing.appendChild(document.createElement("a"));
+          link.href = "#";
+          link.className = "title";
+          link.id = "link-" + prop.id;
+          link.innerHTML = prop.name || prop.address;
+
+          /* Add details to the individual listing. */
+          var details = listing.appendChild(document.createElement("div"));
+          details.innerHTML = prop.city;
+          if (prop.phone) {
+            details.innerHTML += " &middot; " + prop.phoneFormatted;
+          }
+
+          /**
+           * Listen to the element and when it is clicked, do four things:
+           * 1. Update the `currentFeature` to the store associated with the clicked link
+           * 2. Fly to the point
+           * 3. Close all other popups and display popup for clicked store
+           * 4. Highlight listing in sidebar (and remove highlight for all other listings)
+           **/
+          link.addEventListener("click", function (e) {
+            for (var i = 0; i < data.features.length; i++) {
+              if (this.id === "link-" + data.features[i].properties.id) {
+                var clickedListing = data.features[i];
+                flyToStore(clickedListing);
+                createPopUp(clickedListing);
+              }
+            }
+            var activeItem = document.getElementsByClassName("active");
+            if (activeItem[0]) {
+              activeItem[0].classList.remove("active");
+            }
+            this.parentNode.classList.add("active");
+          });
+        });
+      }
+
+      /**
+       * Use Mapbox GL JS's `flyTo` to move the camera smoothly
+       * a given center point.
+       **/
+      function flyToStore(currentFeature) {
+        map.flyTo({
+          center: currentFeature.geometry.coordinates,
+          zoom: 15,
+        });
+      }
+
+      /**
+       * Create a Mapbox GL JS `Popup`.
+       **/
+      function createPopUp(currentFeature) {
+        var popUps = document.getElementsByClassName("mapboxgl-popup");
+        if (popUps[0]) popUps[0].remove();
+        var popup = new mapboxgl.Popup({ closeOnClick: false })
+          .setLngLat(currentFeature.geometry.coordinates)
+          .setHTML(
+            "<h3>"+currentFeature.properties.name+"</h3>" +
+              "<h4>" +
+              currentFeature.properties.address +
+              "</h4>"
+          )
+          .addTo(map);
+      }
+      getUserLocation();
+
+      function getUserLocation() {
+        // request to allow user position
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(showPosition);
+          function showPosition(position) {
+            // get user current coordinates and center map on coordiates
+            console.log("L2", position);
+            //console.log(position.coords.latitude, position.coords.latitude)
+            user_coordinates = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+
+            // draw user location on mao
+            // map
+            //   .getSource("single-point")
+            //   .setData({
+            //     type: "Point",
+            //     coordinates: [user_coordinates.lng, user_coordinates.lat],
+            //   });
+              debugger
+            // geocoder.query(user_coordinates.lat, user_coordinates.lng)
+
+            // Listen for the `result` event from the MapboxGeocoder that is triggered when a user
+            // makes a selection and add a symbol that matches the result.
+            // geocoder.on("result", function (ev) {
+            //   map.getSource("single-point").setData(ev.result.geometry);
+            //   console.log("ev", ev);
+            //   built_address = ev.result.place_name;
+            // });
+          }
+        } else {
+          // if device doesnt support location
+          console.log("device doesnt support location");
+        }
+      }
+    </script>
+  </body>
+</html>
