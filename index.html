@@ -212,6 +212,15 @@
     <div class="heading">
       <h1>Our locations</h1>
     </div>
+    <div>
+      <select name="distance" id="distance">
+        <option value="5">5</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="150">150</option>
+        <option value="250">250</option>
+      </select>
+    </div>
     <div id="listings" class="listings"></div>
   </div>
   <div id="map" class="map"></div>
@@ -515,6 +524,7 @@ stores.features.forEach(function(store) {
 })
 
 stores.features.sort(function(a, b) {
+console.table(a.properties.distance)
   if (a.properties.distance > 10) {
     return 1;
   }
