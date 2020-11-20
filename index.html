@@ -16,16 +16,16 @@
     <link
       href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css"
       rel="stylesheet"
-    />
-    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.5.1/mapbox-gl-geocoder.min.js"></script>
+      />
+      <link
+        rel="stylesheet"
+        href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.5.1/mapbox-gl-geocoder.css"
+        type="text/css"
+      />
     <!-- <script src="./mapbox-gl-geocoder.min.js"></script> -->
     <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script>
     <script src="https://api.mapbox.com/mapbox.js/plugins/turf/v3.0.11/turf.min.js"></script>
-    <link
-      rel="stylesheet"
-      href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.5.1/mapbox-gl-geocoder.css"
-      type="text/css"
-    />
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.5.1/mapbox-gl-geocoder.min.js"></script>
     <style>
       body {
         color: #404040;
@@ -263,7 +263,7 @@
         container: "map",
         style: "mapbox://styles/mapbox/light-v10",
         center: [-77.034084142948, 38.909671288923],
-        // zoom: 13,
+        zoom: 13,
         scrollZoom: true,
         types: "postcode",
       });
@@ -490,8 +490,8 @@
         store.properties.id = i;
       });
 
-      var storeLocation = turf.featureCollection([turf.point(stores.features)]);
-      var dropoffs = turf.featureCollection([]);
+      // var storeLocation = turf.featureCollection([turf.point(stores.features)]);
+      // var dropoffs = turf.featureCollection([]);
       /**
        * Wait until the map loads to make changes to the map.
        */
@@ -526,11 +526,11 @@
           latitude: 37.87221,
         },
         types: "postcode",
-        marker: false,
+        marker: true,
       });
       map.addControl(geocoder);
 
-      // geocoder.addTo('#geocoder');
+      geocoder.addTo('#geocoder');
       geocoder.on("result", function (ev) {
         var searchResult = ev.result.geometry;
         // Code for the next step will go here
@@ -588,9 +588,8 @@
             if (activeItem[0]) {
               activeItem[0].classList.remove("active");
             }
-            debugger
-            newDropoff(map.unproject(e));
-            updateDropoffs(dropoffs);
+            // newDropoff(map.unproject(e));
+            // updateDropoffs(dropoffs);
             var listing = document.getElementById(
               "listing-" + marker.properties.id
             );
