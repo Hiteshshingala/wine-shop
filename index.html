@@ -272,7 +272,7 @@
         type: "FeatureCollection",
         features: [
           {
-            type: "postcode",
+            type: "Feature",
             geometry: {
               type: "Point",
               coordinates: [-118.874355, 34.183137],
@@ -515,7 +515,7 @@
          * - The markers onto the map
          */
         buildLocationList(stores);
-        addMarkers();
+        addMarkers(stores);
       });
 
       var geocoder = new MapboxGeocoder({
@@ -532,7 +532,7 @@
       });
       map.addControl(geocoder);
 
-      geocoder.addTo('#geocoder');
+      
       geocoder.on("result", function (ev) {
         var searchResult = ev.result.geometry;
         // Code for the next step will go here
@@ -549,15 +549,26 @@
             configurable: true,
           });
         });
-        stores.features.filter((a) => a.properties.distance <= distance);
+        let filteredStore = stores.features.filter((a) =>{ 
+          return a.properties.distance <= distance
+          });
+        map.getSource('places').setData({type: "FeatureCollection", features: filteredStore});
+        addMarkers({type: "FeatureCollection", features: filteredStore});
       });
+      geocoder.addTo('#geocoder');
+
+
 
       /**
        * Add a marker to the map for every store listing.
        **/
-      function addMarkers() {
+      function addMarkers(data) {
+        //remove all marker
+        $('.marker').remove()
+
+
         /* For each feature in the GeoJSON object above: */
-        stores.features.forEach(function (marker) {
+        data.features.forEach(function (marker) {
           /* Create a div element for the marker. */
           var el = document.createElement("div");
           /* Assign a unique `id` to the marker. */
@@ -681,6 +692,9 @@
             "<h3>" +
               currentFeature.properties.postalCode +
               "</h3>" +
+            "<h3>" +
+              currentFeature.properties.distance +
+              "</h3>" +
               "<h4>" +
               currentFeature.properties.address +
               "</h4>" +
@@ -713,28 +727,6 @@
           console.log("device doesnt support location");
         }
       }
-      var truckLocation = [-83.093, 42.376];
-      var warehouseLocation = [-83.083, 42.363];
-      var lastQueryTime = 0;
-      var lastAtRestaurant = 0;
-      var keepTrack = [];
-      var currentSchedule = [];
-      var currentRoute = null;
-      var pointHopper = {};
-      var pause = true;
-      var speedFactor = 50;
-
-      // Add your access token
-      mapboxgl.accessToken =
-        "pk.eyJ1IjoiYW5ndWxhcjE1ODMiLCJhIjoiY2toaGd4amNuMTFqejJybHVmN3c1NDBlcSJ9.S3KkGY169sMPpRRsGwE3qg";
-
-      // Initialize a map
-      var map = new mapboxgl.Map({
-        container: "map", // container id
-        style: "mapbox://styles/mapbox/light-v10", // stylesheet location
-        center: truckLocation, // starting position
-        zoom: 12, // starting zoom
-      });
     </script>
   </body>
 </html>
